@@ -390,7 +390,91 @@ Until a patch is available:
 
 ## Disclaimer
 
-This vulnerability report is provided for security research and defensive purposes only. Unauthorized testing of devices you do not own is illegal. The researcher follows responsible disclosure practices and has notified the vendor before public disclosure.
+### Research Methodology
+
+This vulnerability was discovered through **static analysis** of the firmware binary using reverse engineering tools. The analysis includes:
+
+✅ **Confirmed through static analysis**:
+- Decompiled source code of the vulnerable `setTools` function
+- Identification of incomplete input filtering (only 4 characters blocked)
+- Command injection point in `sprintf()` + `system()` calls
+- String analysis showing command templates with `%s` placeholders
+- IDA Pro screenshots as evidence
+
+⚠️ **Not confirmed through dynamic testing**:
+- Exact CGI endpoint path (theoretical: `/cgi-bin/skk_set.cgi`)
+- Authentication requirements (unknown)
+- Actual exploitability on live devices
+- Network accessibility (LAN/WAN)
+
+### Confidence Level
+
+Despite being static analysis only, the confidence level is **HIGH** because:
+- ✅ Complete source code obtained through IDA Pro decompilation
+- ✅ Clear vulnerability pattern: unfiltered input → sprintf → system
+- ✅ Incomplete filtering mechanism confirmed (only blocks space, |, ;, &)
+- ✅ Multiple bypass techniques identified ($(), backticks, newlines)
+- ✅ Similar vulnerabilities exist in other IoT devices (CVE-2023-XXXXX, etc.)
+
+### Responsible Disclosure
+
+This vulnerability report is provided for:
+- **Security research purposes**: To improve IoT security awareness
+- **Defensive purposes**: To help users protect their devices
+- **Vendor notification**: To enable patch development (90-day disclosure window)
+
+### Legal Notice
+
+- ⚠️ **Unauthorized testing is illegal**: Only test devices you own or have explicit written permission to test
+- ⚠️ **No warranty**: This information is provided "as is" without any guarantees of accuracy or completeness
+- ✅ **Responsible disclosure**: The researcher follows responsible disclosure practices
+- ✅ **Vendor notification**: The vendor will be notified before public disclosure
+
+### Testing Guidelines
+
+If you wish to verify this vulnerability:
+
+**DO**:
+- ✅ Only test on devices you own
+- ✅ Set up an isolated test environment
+- ✅ Obtain proper authorization if testing organizational devices
+- ✅ Report findings responsibly
+
+**DON'T**:
+- ❌ Test on devices you don't own
+- ❌ Test on production systems without authorization
+- ❌ Use this information for malicious purposes
+- ❌ Scan the internet for vulnerable devices
+
+### Limitations
+
+This report is based on:
+- **Firmware version**: V3.0.0.6938 (2026-01-08) only
+- **Analysis method**: Static analysis using IDA Pro
+- **Scope**: Single firmware binary (`netis.cgi`)
+
+Other firmware versions or models may:
+- Have different code implementations
+- Have additional security measures
+- Require different exploitation techniques
+
+### Call for Verification
+
+If you own a Netcore POWER15AX router and can verify this vulnerability in a controlled environment:
+- Please contact the researcher via GitHub Issues
+- Any findings will be credited and added to this report
+- Help improve IoT security through responsible disclosure
+
+### Contact
+
+For questions, verification results, or security concerns:
+- **GitHub Issues**: https://github.com/fakervsbln/netcore-power15ax-cve/issues
+- **Responsible disclosure**: Please report any concerns privately first
+
+---
+
+**Last Updated**: March 10, 2026
+
 
 ---
 
